@@ -11,6 +11,7 @@ namespace Models
         string FirstName { get; }
         string LastName { get; }
         string FullName { get; }
+        string Label { get; }
     }
 
     public class Player : IPlayer
@@ -26,6 +27,7 @@ namespace Models
         public string FirstName { get; }
         public string LastName { get; }
         public string FullName => $"{FirstName} {LastName}";
+        public string Label => ToString();
 
         public static bool operator ==(Player a, Player b) => a.Equals(b);
         public static bool operator !=(Player a, Player b) => !a.Equals(b);
@@ -44,6 +46,7 @@ namespace Models
         }
 
         public override string ToString() => $"#{Number}, {FullName}";
+
     }
 
     // dummy player is a place holder that when you insert a live player into an empty list at position X, the dummy player will be inserted in the front of the live player
@@ -180,6 +183,8 @@ namespace Models
     // IDepthCharts interface, deine the common methods for the depth charts
     public interface IDepthCharts<T> where T: IPositionRankList
     {
+        string Title { get; }
+
         void AddPlayerToDepthChart(string position, IPlayer player, int? positionDepth = null);
         IPlayer RemovePlayerFromDepthChart(string position, IPlayer player);
         IEnumerable<IPlayer> GetBackups(string position, IPlayer player);
@@ -190,19 +195,28 @@ namespace Models
         // key for the position and enumerable for the players
         IDictionary<string, IEnumerable<IPlayer>> GetFullDepthCharts();
 
+        string PrintBackups(Func<IEnumerable<IPlayer>, string> printFunc, string position, IPlayer player);
+
         string PrintFullDepthCharts(Func<IDictionary<string, IEnumerable<IPlayer>>, string> printFunc);
+
+        //IEnumerable<string> Positions { get; }
     }
 
     // depth charts, any class implements IPositionRankList is accpeted
     public class DepthCharts<T> : IDepthCharts<T> where T : IPositionRankList
     {
+        public const string STR_NO_LIST = "<NO LIST>";
         // use dictionary to reteive the ranlist based on the position, and manuplate it with player.
         private readonly Dictionary<string, T> rankListDictionary = new Dictionary<string, T>();
         private readonly ISport _sport = null;
+        private readonly string _title;
 
-        public DepthCharts(ISport sport, IPositionRankListFactory<T> factory)
+        public string Title => _title;
+
+        public DepthCharts(ISport sport, string title, IPositionRankListFactory<T> factory)
         {
             _sport = sport;
+            _title = title;
 
             // since most of the positions in the sport are developed and fixed, we don't need to add new position dynamically. Otherwise, we may need to design an interface method to add / remove position
             foreach (var position in sport.Positions.Distinct())
@@ -210,6 +224,8 @@ namespace Models
                 rankListDictionary[position] = factory.CreateInstance(position);
             }
         }
+
+        //public IEnumerable<string> Positions => _sport.Positions;
 
         public void AddPlayerToDepthChart(string position, IPlayer player, int? positionDepth = null)
         {
@@ -252,6 +268,11 @@ namespace Models
         {
             return printFunc(GetFullDepthCharts());
         }
+
+        public string PrintBackups(Func<IEnumerable<IPlayer>, string> printFunc, string position, IPlayer player)
+        {
+            return printFunc(GetBackups(position, player));
+        }
     }
 
     // PositionRankListFactory
@@ -266,6 +287,40 @@ namespace Models
         public T CreateInstance(string position)
         {
             return (T)Activator.CreateInstance(typeof(T), position);
+        }
+    }
+
+    public static class TampaBayBuccaneers
+    {
+        public static IEnumerable<IPlayer> GetPlayers()
+        {
+            return new[] {
+                new Player("Mike", "Evans", 13),
+                new Player("Tylor", "Johnson", 18),
+                new Player("Donovan", "Smith", 76),
+                new Player("Ali", "Marpet", 74),
+                new Player("Ryan", "Jensen", 66),
+                new Player("Alex", "Cappa", 65),
+                new Player("Tristan", "Wirfs", 78),
+                new Player("OJ", "Howard", 80),
+                new Player("Rob", "Gronkowski", 87),
+                new Player("Tom", "Brady", 12),
+                new Player("Leonard", "Fournette", 7),
+                new Player("Jaelon", "Darden", 1),
+                new Player("Breshad", "Perriman", 16),
+                new Player("Josh", "Wells", 72),
+                new Player("Nick", "Leverett", 60),
+                new Player("Robert", "Hainsey", 70),
+                new Player("Aaron", "Stinnie", 64),
+                new Player("Cameron", "Brate", 84),
+                new Player("Blaine", "Gabbert", 11),
+                new Player("Ronald", "Jones II", 27),
+                new Player("Scott", "Miller", 10),
+                new Player("Cyrill", "Grayson", 15),
+                new Player("Kyle", "Trask", 2),
+                new Player("Ke'Shawn", "Vaughn", 21),
+                new Player("Giovani", "Bernard", 25),                
+            };
         }
     }
 }

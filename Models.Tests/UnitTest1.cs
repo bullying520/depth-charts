@@ -23,15 +23,15 @@ namespace Models.Tests
         [TestInitialize]
         public void SetUp()
         {
-            TomBrady = new Player("Tom", "Brady", 12);            
+            TomBrady = new Player("Tom", "Brady", 12);
             TomBrady2 = new Player("Tom2", "Brady2", 22);
             TomBrady3 = new Player("Tom3", "Brady3", 32);
             positionList = new PositionRankList("ff");
 
             factory = new PositionRankListFactory<PositionRankList>();
-            depthCharts = new DepthCharts<PositionRankList>(new NFL(), factory);
+            depthCharts = new DepthCharts<PositionRankList>(new NFL(), "Offense", factory);
 
-            nfl= new NFL();
+            nfl = new NFL();
             soccer = new Soccer();
 
             NFLPositions = nfl.Positions;
@@ -40,7 +40,7 @@ namespace Models.Tests
 
         [TestMethod]
         public void PlayerShouldShowFullNameWithSpace()
-        {            
+        {
             Assert.AreEqual(TomBrady.FullName, "Tom Brady");
         }
 
@@ -258,7 +258,7 @@ namespace Models.Tests
 
             var backups = positionList.GetBackups(TomBrady3);
 
-            Assert.AreEqual(backups.Count(), 0);            
+            Assert.AreEqual(backups.Count(), 0);
         }
 
         [TestMethod]
@@ -337,7 +337,8 @@ namespace Models.Tests
         public void TestPrintFullDepthCharts()
         {
             var sb = new StringBuilder();
-            Func<IDictionary<string, IEnumerable<IPlayer>>, string> func = (dict) => {
+            Func<IDictionary<string, IEnumerable<IPlayer>>, string> func = (dict) =>
+            {
                 foreach (var position in dict.Keys)
                 {
                     var list = dict[position];
@@ -361,6 +362,88 @@ namespace Models.Tests
             var expected = @"QB - (#12, Tom Brady), (#32, Tom3 Brady3)
 FB - (#22, Tom2 Brady2)
 ";
+            Assert.AreEqual(result, expected);
+        }
+
+        [TestMethod]
+        public void TestPrintBackups()
+        {
+            var sb = new StringBuilder();
+            Func<IEnumerable<IPlayer>, string> func = (list) =>
+            {
+                var players = string.Join("\r\n", list.Select(player => $"{player}"));
+                sb.AppendLine(players);
+
+                return sb.ToString();
+            };
+
+            var qb = NFL.Position.QB.ToString();
+            depthCharts.AddPlayerToDepthChart(qb, TomBrady);
+            depthCharts.AddPlayerToDepthChart(qb, TomBrady2);
+            depthCharts.AddPlayerToDepthChart(qb, TomBrady3);
+
+            var result = depthCharts.PrintBackups(func, qb, TomBrady);
+            var expected = @"#22, Tom2 Brady2
+#32, Tom3 Brady3
+";
+            Assert.AreEqual(result, expected);
+        }
+
+        [TestMethod]
+        public void TestPrintBackupsNoList()
+        {
+            var sb = new StringBuilder();
+            Func<IEnumerable<IPlayer>, string> func = (list) =>
+            {
+                if (list.Count() == 0)
+                {
+                    sb.AppendLine(DepthCharts<PositionRankList>.STR_NO_LIST);
+                }
+                else
+                {
+                    var players = string.Join("\r\n", list.Select(player => $"{player}"));
+                    sb.AppendLine(players);
+                }
+
+                return sb.ToString();
+            };
+
+            var qb = NFL.Position.QB.ToString();
+            depthCharts.AddPlayerToDepthChart(qb, TomBrady);
+            depthCharts.AddPlayerToDepthChart(qb, TomBrady2);
+            depthCharts.AddPlayerToDepthChart(qb, TomBrady3);
+
+            var result = depthCharts.PrintBackups(func, qb, TomBrady3);
+            var expected = @"<NO LIST>
+";
+            Assert.AreEqual(result, expected);
+        }
+
+        [TestMethod]
+        public void TestPrintFullDepthChartsNoList()
+        {
+            var sb = new StringBuilder();
+            Func<IDictionary<string, IEnumerable<IPlayer>>, string> func = (dict) =>
+            {
+                foreach (var position in dict.Keys)
+                {
+                    var list = dict[position];
+                    if (list.Count() == 0) { continue; }
+
+                    var players = string.Join(", ", list.Select(player => $"({player})"));
+                    sb.AppendLine($"{position} - {players}");
+                }
+
+                if (sb.Length == 0)
+                {
+                    return DepthCharts<PositionRankList>.STR_NO_LIST;
+                }
+
+                return sb.ToString();
+            };
+
+            var result = depthCharts.PrintFullDepthCharts(func);
+            var expected = @"<NO LIST>";
             Assert.AreEqual(result, expected);
         }
     }

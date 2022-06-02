@@ -9,6 +9,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Models", "Models\Models.csp
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Models.Tests", "Models.Tests\Models.Tests.csproj", "{B2E64209-77B9-470C-93E8-7B853A3655D6}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DepthChartsApp", "DepthChartsApp\DepthChartsApp.csproj", "{12939E2A-3624-45C5-8466-4557F7B74D26}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{B2E64209-77B9-470C-93E8-7B853A3655D6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B2E64209-77B9-470C-93E8-7B853A3655D6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B2E64209-77B9-470C-93E8-7B853A3655D6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{12939E2A-3624-45C5-8466-4557F7B74D26}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{12939E2A-3624-45C5-8466-4557F7B74D26}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{12939E2A-3624-45C5-8466-4557F7B74D26}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{12939E2A-3624-45C5-8466-4557F7B74D26}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

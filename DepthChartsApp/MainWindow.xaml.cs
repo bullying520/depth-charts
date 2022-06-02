@@ -1,10 +1,14 @@
-﻿using System;
+﻿using Models;
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Dynamic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Input;
@@ -20,9 +24,343 @@ namespace DepthChartsApp
     /// </summary>
     public partial class MainWindow : Window
     {
+        private ISport sport;
+        private IDepthCharts<PositionRankList> depthCharts;
+        private IPositionRankListFactory<PositionRankList> factory;
+        //private bool isDraging = false;
+        private IPlayer currentSelectedPlayer = null;
+        private string currentSelectedPosition = "";
+
+        public OutputViewModel OutputModel { get; set; }
+
         public MainWindow()
         {
             InitializeComponent();
+            btnRemove.IsEnabled = false;
+            btnPrintBackups.IsEnabled = false;
+
+            OutputModel = new OutputViewModel();
+            playersList.ItemsSource = TampaBayBuccaneers.GetPlayers().OrderBy(p => p.Number);
+
+            // todo IOC
+            sport = new NFL() as ISport;
+            factory = new PositionRankListFactory<PositionRankList>();
+            var NFLChartTitle = "Offense";
+            depthCharts = new DepthCharts<PositionRankList>(sport, NFLChartTitle, factory);
+            ChartTitle.DataContext = depthCharts;
+
+            RefreshGrid();
+        }
+
+        private class DataGridRowViewModel
+        {
+            public string Position { get; set; }
+            public IPlayer Player1 { get; set; }
+            public IPlayer Player2 { get; set; }
+            public IPlayer Player3 { get; set; }
+            public IPlayer Player4 { get; set; }
+            public IPlayer Player5 { get; set; }
+        }
+
+        public class OutputViewModel
+        {
+            private StringBuilder sb = new StringBuilder();
+
+            public string Output
+            {
+                get { return sb.ToString(); }
+                set { }
+            }
+
+            public void Append(string message, TextBox outputBox)
+            {
+                sb.AppendLine(message);
+                outputBox.Text = Output;
+            }
+        }
+
+        private void RefreshGrid()
+        {
+            depthChartsGrid.ItemsSource = null;
+
+            var viewModelList = new List<DataGridRowViewModel>();
+            foreach (var position in sport.Positions)
+            {
+                var playersInPosition = depthCharts.GetFullPositionChart(position).ToList();
+
+                var viewModel = new DataGridRowViewModel
+                {
+                    Position = position,
+                    Player1 = playersInPosition.FirstOrDefault(),
+                    Player2 = playersInPosition.Count() >= 2 ? playersInPosition[1] : null,
+                    Player3 = playersInPosition.Count() >= 3 ? playersInPosition[2] : null,
+                    Player4 = playersInPosition.Count() >= 4 ? playersInPosition[3] : null,
+                    Player5 = playersInPosition.Count() >= 5 ? playersInPosition[4] : null,
+                };
+
+                viewModelList.Add(viewModel);
+            }
+
+            depthChartsGrid.ItemsSource = viewModelList;
+        }
+
+        private void ListBox_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            ListBox parent = (ListBox)sender;
+            playersList = parent;
+            object data = GetDataFromListBox(playersList, e.GetPosition(parent));
+
+            if (data != null)
+            {
+                DragDrop.DoDragDrop(parent, data, DragDropEffects.Copy);
+                //isDraging = true;
+            }
+        }
+
+        private static object GetDataFromListBox(ListBox source, Point point)
+        {
+            if (source.InputHitTest(point) is UIElement element)
+            {
+                object data = DependencyProperty.UnsetValue;
+                while (data == DependencyProperty.UnsetValue)
+                {
+                    data = source.ItemContainerGenerator.ItemFromContainer(element);
+
+                    if (data == DependencyProperty.UnsetValue)
+                    {
+                        element = VisualTreeHelper.GetParent(element) as UIElement;
+                    }
+
+                    if (element == source)
+                    {
+                        return null;
+                    }
+                }
+
+                if (data != DependencyProperty.UnsetValue)
+                {
+                    return data;
+                }
+            }
+
+            return null;
+        }
+
+        private Tuple<int, int> GetDataGridRowIndexColumnIndex(DependencyObject dep)
+        {
+            //DependencyObject dep = (DependencyObject)e.OriginalSource;
+
+            //Stepping through the visual tree
+            while ((dep != null) && !(dep is DataGridCell))
+            {
+                dep = VisualTreeHelper.GetParent(dep);
+            }
+
+            //Is the dep a cell or outside the bounds of Window1?
+            if (dep == null | !(dep is DataGridCell))
+            {
+                return null;
+            }
+            else
+            {
+                DataGridCell cell = new DataGridCell();
+                cell = (DataGridCell)dep;
+                while ((dep != null) && !(dep is DataGridRow))
+                {
+                    dep = VisualTreeHelper.GetParent(dep);
+                }
+
+                if (dep == null)
+                {
+                    return null;
+                }
+                int colIndex = cell.Column.DisplayIndex;
+
+                DataGridRow row = dep as DataGridRow;
+                int rowIndex = depthChartsGrid.ItemContainerGenerator.IndexFromContainer(row);
+
+                Trace.WriteLine($"{rowIndex}, {colIndex}");
+                return Tuple.Create(rowIndex, colIndex);
+            }
+        }
+
+        private void DepthChartsGrid_Drop(object sender, DragEventArgs e)
+        {
+            if (!(e.Data.GetData(typeof(Player)) is IPlayer player))
+                return;
+
+            Trace.WriteLine(player);
+
+            var rowData = (e.OriginalSource as TextBlock).DataContext;
+            if (rowData == null) return;
+
+            var position = rowData.GetType().GetProperty("Position")?.GetValue(rowData, null).ToString();
+
+            Trace.WriteLine(position);
+
+            var indexTuple = GetDataGridRowIndexColumnIndex((DependencyObject)e.OriginalSource);
+            if (indexTuple == null) return;
+
+            var positionDepth = indexTuple.Item2 - 1; // need to deduct the first position string column
+
+            try
+            {                
+                depthCharts.AddPlayerToDepthChart(position, player, positionDepth);
+                RefreshGrid();
+
+                var msg = $"{position} - Inserted {{{player}}} at index: {positionDepth}";
+                OutputModel.Append(msg, outputBox);
+            }
+            catch (Exception ex)
+            {                
+                Trace.WriteLine(ex.Message);
+
+                MessageBox.Show(ex.Message);
+            }
+
+        }
+
+        private void DepthChartsGrid_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (e.LeftButton == MouseButtonState.Pressed)
+            {
+                DependencyObject dep = (DependencyObject)e.OriginalSource;
+
+                //Stepping through the visual tree
+                while ((dep != null) && !(dep is DataGridCell))
+                {
+                    dep = VisualTreeHelper.GetParent(dep);
+                }
+
+                //Is the dep a cell or outside the bounds of Window1?
+                if (dep == null | !(dep is DataGridCell))
+                {
+                    return;
+                }
+                else
+                {
+                    DataGridCell cell = new DataGridCell();
+                    cell = (DataGridCell)dep;
+                    while ((dep != null) && !(dep is DataGridRow))
+                    {
+                        dep = VisualTreeHelper.GetParent(dep);
+                    }
+
+                    if (dep == null)
+                    {
+                        return;
+                    }
+                    int colindex = cell.Column.DisplayIndex;
+
+                    DataGridRow row = dep as DataGridRow;
+                    int rowindex = depthChartsGrid.ItemContainerGenerator.IndexFromContainer(row);
+
+                    Trace.WriteLine($"{colindex}, {rowindex}");
+                }
+            }    
+        }
+
+        // somehow the datagrid.SelectedItemChanged event didn't popularte the new selected item, has to use the mouse up event
+        private void DepthChartsGrid_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            var rowData = (e.OriginalSource as TextBlock)?.DataContext;
+            if (rowData == null) return;
+
+            currentSelectedPosition = rowData.GetType().GetProperty("Position")?.GetValue(rowData, null).ToString();
+
+            Trace.WriteLine(currentSelectedPosition);
+
+            var indexTuple = GetDataGridRowIndexColumnIndex((DependencyObject)e.OriginalSource);
+            if (indexTuple == null) return;
+
+            var player = rowData.GetType().GetProperty($"Player{indexTuple.Item2}")?.GetValue(rowData, null) as IPlayer;
+            Trace.WriteLine(player);
+
+            currentSelectedPlayer = player;
+
+            if (currentSelectedPlayer != null)
+            {
+                btnPrintBackups.IsEnabled = btnRemove.IsEnabled = true;
+                btnRemove.Content = $"Remove {player}";
+            }
+            else
+            {
+                btnPrintBackups.IsEnabled = btnRemove.IsEnabled = false;
+                btnRemove.Content = "Remove Player";
+            }
+        }
+
+        private void BtnRemove_Click(object sender, RoutedEventArgs e)
+        {
+            if (currentSelectedPlayer == null) { return; }
+
+            depthCharts.RemovePlayerFromDepthChart(currentSelectedPosition, currentSelectedPlayer);
+
+            var msg = $"{currentSelectedPosition} - Removed {{{currentSelectedPlayer}}}";
+            OutputModel.Append(msg, outputBox);
+
+            currentSelectedPosition = "";
+            currentSelectedPlayer = null;
+
+            btnPrintBackups.IsEnabled = btnRemove.IsEnabled = false;
+            btnRemove.Content = "Remove Player";
+
+            RefreshGrid();
+        }
+
+        private void BtnPrintBackups_Click(object sender, RoutedEventArgs e)
+        {
+            if (currentSelectedPlayer == null) { return; }
+
+            var sb = new StringBuilder();
+            Func<IEnumerable<IPlayer>, string> func = (list) =>
+            {
+                if (list.Count() == 0)
+                {
+                    sb.AppendLine(DepthCharts<PositionRankList>.STR_NO_LIST);
+                }
+                else
+                {
+                    var players = string.Join("\r\n", list.Select(player => $"{player}"));
+                    sb.AppendLine(players);
+                }
+
+                return sb.ToString();
+            };
+
+            var output = depthCharts.PrintBackups(func, currentSelectedPosition, currentSelectedPlayer);
+            OutputModel.Append(output, outputBox);
+        }
+
+        private void OutputBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            outputBox.ScrollToEnd();
+        }
+
+        private void BtnPrintFullCharts_Click(object sender, RoutedEventArgs e)
+        {
+            var sb = new StringBuilder();
+            Func<IDictionary<string, IEnumerable<IPlayer>>, string> func = (dict) =>
+            {
+                foreach (var position in dict.Keys)
+                {
+                    var list = dict[position];
+                    if (list.Count() == 0) { continue; }
+
+                    var players = string.Join(", ", list.Select(player => $"({player})"));
+                    sb.AppendLine($"{position} - {players}");
+                }
+
+                if (sb.Length == 0)
+                {
+                    return DepthCharts<PositionRankList>.STR_NO_LIST;
+                }
+
+                return sb.ToString();
+            };
+
+            var output = depthCharts.PrintFullDepthCharts(func);
+            OutputModel.Append(output, outputBox);
         }
     }
 }

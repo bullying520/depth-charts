@@ -5,8 +5,33 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:DepthChartsApp"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        WindowStartupLocation="CenterScreen" ResizeMode="NoResize"
+        Title="Depth Charts" Height="760" Width="1280">
     <Grid>
-        
+        <ListBox x:Name="playersList" HorizontalAlignment="Left" Height="662" Margin="1,30,0,0" VerticalAlignment="Top" Width="145" PreviewMouseLeftButtonDown="ListBox_PreviewMouseLeftButtonDown">
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <TextBlock Text="{Binding Label}"/>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+        <Label x:Name="label" Content="Players" HorizontalAlignment="Left" Margin="2,1,0,0" VerticalAlignment="Top" Width="98" Height="26"/>
+        <DataGrid x:Name="depthChartsGrid" HorizontalAlignment="Left" Height="389" Margin="153,31,0,0" VerticalAlignment="Top" Width="1114" AutoGenerateColumns="False" AllowDrop="True" Drop="DepthChartsGrid_Drop" MouseMove="DepthChartsGrid_MouseMove" SelectionUnit="Cell" IsReadOnly="True" PreviewMouseLeftButtonUp="DepthChartsGrid_PreviewMouseLeftButtonUp">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Position" Binding="{Binding Position}" Width="*"/>
+                <DataGridTextColumn Header="Player 1" Binding="{Binding Player1.Label}"  Width="*"/>
+                <DataGridTextColumn Header="Player 2" Binding="{Binding Player2.Label}"  Width="*"/>
+                <DataGridTextColumn Header="Player 3" Binding="{Binding Player3.Label}"  Width="*"/>
+                <DataGridTextColumn Header="Player 4" Binding="{Binding Player4.Label}"  Width="*"/>
+                <DataGridTextColumn Header="Player 5" Binding="{Binding Player5.Label}"  Width="*"/>
+            </DataGrid.Columns>
+        </DataGrid>
+        <Grid HorizontalAlignment="Left" Height="28" Margin="154,426,0,0" VerticalAlignment="Top" Width="1118">
+            <Button x:Name="btnRemove" Content="Remove Player" HorizontalAlignment="Left" Margin="7,5,0,0" VerticalAlignment="Top" Width="187" Click="BtnRemove_Click"/>
+            <Button x:Name="btnPrintBackups" Content="Print Backups" HorizontalAlignment="Left" Margin="216,5,0,0" VerticalAlignment="Top" Width="187" Click="BtnPrintBackups_Click"/>
+            <Button x:Name="btnPrintFullCharts" Content="Print Full Charts" HorizontalAlignment="Left" Margin="425,5,0,0" VerticalAlignment="Top" Width="187" Click="BtnPrintFullCharts_Click"/>
+        </Grid>
+        <TextBox x:Name="outputBox" HorizontalAlignment="Left" Height="230" Margin="154,462,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="1113" IsReadOnly="True" TextChanged="OutputBox_TextChanged" VerticalScrollBarVisibility="Auto" />
+        <Label x:Name="ChartTitle" Content="{Binding Title}" HorizontalAlignment="Left" Margin="153,4,0,0" VerticalAlignment="Top"/>
     </Grid>
 </Window>
