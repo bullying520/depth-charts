@@ -16,6 +16,8 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using Unity;
+using Unity.Injection;
 
 namespace DepthChartsApp
 {
@@ -27,9 +29,10 @@ namespace DepthChartsApp
         private ISport sport;
         private IDepthCharts<PositionRankList> depthCharts;
         private IPositionRankListFactory<PositionRankList> factory;
-        //private bool isDraging = false;
         private IPlayer currentSelectedPlayer = null;
         private string currentSelectedPosition = "";
+        private const string STR_NFL = "NFL";
+        private const string STR_SOCCER = "Soccer";
 
         public OutputViewModel OutputModel { get; set; }
 
@@ -38,15 +41,26 @@ namespace DepthChartsApp
             InitializeComponent();
             btnRemove.IsEnabled = false;
             btnPrintBackups.IsEnabled = false;
-
             OutputModel = new OutputViewModel();
-            playersList.ItemsSource = TampaBayBuccaneers.GetPlayers().OrderBy(p => p.Number);
 
-            // todo IOC
-            sport = new NFL() as ISport;
-            factory = new PositionRankListFactory<PositionRankList>();
+            var container = new UnityContainer();
+            container.RegisterType<IPositionRankListFactory<PositionRankList>, PositionRankListFactory<PositionRankList>>();
+            container.RegisterType<ISport, NFL>(STR_NFL);
+            container.RegisterType<ISport, Soccer>(STR_SOCCER);
+
+            container.RegisterType<ITeam, TampaBayBuccaneers>(STR_NFL);
+            container.RegisterType<ITeam, RealMadrid>(STR_SOCCER);
+
+
+            var team = container.Resolve<ITeam>(STR_SOCCER);
+            playersList.ItemsSource = team.GetPlayers().OrderBy(p => p.Number);
+
+            sport = container.Resolve<ISport>(STR_NFL);
+            factory = container.Resolve<IPositionRankListFactory<PositionRankList>>();
             var NFLChartTitle = "Offense";
-            depthCharts = new DepthCharts<PositionRankList>(sport, NFLChartTitle, factory);
+
+            container.RegisterType<IDepthCharts<PositionRankList>, DepthCharts<PositionRankList>>(new InjectionConstructor(new object[] { sport, NFLChartTitle, factory}));
+            depthCharts = container.Resolve<IDepthCharts<PositionRankList>>();
             ChartTitle.DataContext = depthCharts;
 
             RefreshGrid();
@@ -191,7 +205,7 @@ namespace DepthChartsApp
 
             Trace.WriteLine(player);
 
-            var rowData = (e.OriginalSource as TextBlock).DataContext;
+            var rowData = (e.OriginalSource as TextBlock)?.DataContext;
             if (rowData == null) return;
 
             var position = rowData.GetType().GetProperty("Position")?.GetValue(rowData, null).ToString();

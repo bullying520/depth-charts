@@ -290,9 +290,14 @@ namespace Models
         }
     }
 
-    public static class TampaBayBuccaneers
+    public interface ITeam
     {
-        public static IEnumerable<IPlayer> GetPlayers()
+        IEnumerable<IPlayer> GetPlayers();
+    }
+
+    public class TampaBayBuccaneers : ITeam
+    {
+        public IEnumerable<IPlayer> GetPlayers()
         {
             return new[] {
                 new Player("Mike", "Evans", 13),
@@ -320,6 +325,40 @@ namespace Models
                 new Player("Kyle", "Trask", 2),
                 new Player("Ke'Shawn", "Vaughn", 21),
                 new Player("Giovani", "Bernard", 25),                
+            };
+        }
+    }
+
+    public class RealMadrid : ITeam
+    {
+        public IEnumerable<IPlayer> GetPlayers()
+        {
+            return new[] {
+                new Player("Thibaut", "Courtois", 1),
+                new Player("Andriy", "Lunin", 13),
+                new Player("Eder", "Militao", 3),
+                new Player("David", "Alaba", 4),
+                //new Player("Ryan", "Jensen", 66),
+                //new Player("Alex", "Cappa", 65),
+                //new Player("Tristan", "Wirfs", 78),
+                //new Player("OJ", "Howard", 80),
+                //new Player("Rob", "Gronkowski", 87),
+                //new Player("Tom", "Brady", 12),
+                //new Player("Leonard", "Fournette", 7),
+                //new Player("Jaelon", "Darden", 1),
+                //new Player("Breshad", "Perriman", 16),
+                //new Player("Josh", "Wells", 72),
+                //new Player("Nick", "Leverett", 60),
+                //new Player("Robert", "Hainsey", 70),
+                //new Player("Aaron", "Stinnie", 64),
+                //new Player("Cameron", "Brate", 84),
+                //new Player("Blaine", "Gabbert", 11),
+                //new Player("Ronald", "Jones II", 27),
+                //new Player("Scott", "Miller", 10),
+                //new Player("Cyrill", "Grayson", 15),
+                //new Player("Kyle", "Trask", 2),
+                //new Player("Ke'Shawn", "Vaughn", 21),
+                //new Player("Giovani", "Bernard", 25),
             };
         }
     }
