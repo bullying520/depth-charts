@@ -15,8 +15,19 @@
                 </DataTemplate>
             </ListBox.ItemTemplate>
         </ListBox>
-        <Label x:Name="label" Content="Players" HorizontalAlignment="Left" Margin="2,1,0,0" VerticalAlignment="Top" Width="98" Height="26"/>
-        <DataGrid x:Name="depthChartsGrid" HorizontalAlignment="Left" Height="389" Margin="153,31,0,0" VerticalAlignment="Top" Width="1114" AutoGenerateColumns="False" AllowDrop="True" Drop="DepthChartsGrid_Drop" MouseMove="DepthChartsGrid_MouseMove" SelectionUnit="Cell" IsReadOnly="True" PreviewMouseLeftButtonUp="DepthChartsGrid_PreviewMouseLeftButtonUp">
+        <Label x:Name="label" Content="Choose sport" HorizontalAlignment="Left" Margin="2,1,0,0" VerticalAlignment="Top" Width="98" Height="26"/>
+        <DataGrid x:Name="depthChartsGrid" HorizontalAlignment="Left" Height="389" Margin="153,31,0,0" VerticalAlignment="Top" Width="1114" AutoGenerateColumns="False" AllowDrop="True" Drop="DepthChartsGrid_Drop" DragOver="DepthChartsGrid_DragOver" SelectionUnit="Cell" IsReadOnly="True" PreviewMouseLeftButtonUp="DepthChartsGrid_PreviewMouseLeftButtonUp">
+            <DataGrid.CellStyle>
+                <Style TargetType="DataGridCell">
+                    <Style.Triggers>
+                        <Trigger Property="IsMouseOver"
+                         Value="True">
+                            <Setter Property="Background"
+                            Value="Yellow" />
+                        </Trigger>
+                    </Style.Triggers>
+                </Style>
+            </DataGrid.CellStyle>
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Position" Binding="{Binding Position}" Width="*"/>
                 <DataGridTextColumn Header="Player 1" Binding="{Binding Player1.Label}"  Width="*"/>
@@ -33,5 +44,6 @@
         </Grid>
         <TextBox x:Name="outputBox" HorizontalAlignment="Left" Height="230" Margin="154,462,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="1113" IsReadOnly="True" TextChanged="OutputBox_TextChanged" VerticalScrollBarVisibility="Auto" />
         <Label x:Name="ChartTitle" Content="{Binding Title}" HorizontalAlignment="Left" Margin="153,4,0,0" VerticalAlignment="Top"/>
+        <ComboBox x:Name="sportsComboBox" HorizontalAlignment="Left" Margin="3,29,0,0" VerticalAlignment="Top" Width="142" SelectionChanged="SportsComboBox_SelectionChanged"/>
     </Grid>
 </Window>

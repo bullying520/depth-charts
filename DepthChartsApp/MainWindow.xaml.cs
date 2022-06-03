@@ -31,6 +31,8 @@ namespace DepthChartsApp
         private IPositionRankListFactory<PositionRankList> factory;
         private IPlayer currentSelectedPlayer = null;
         private string currentSelectedPosition = "";
+        private string currentSport = STR_NFL;
+        private UnityContainer container;
         private const string STR_NFL = "NFL";
         private const string STR_SOCCER = "Soccer";
 
@@ -41,9 +43,9 @@ namespace DepthChartsApp
             InitializeComponent();
             btnRemove.IsEnabled = false;
             btnPrintBackups.IsEnabled = false;
-            OutputModel = new OutputViewModel();
+            OutputModel = new OutputViewModel(outputBox);
 
-            var container = new UnityContainer();
+            container = new UnityContainer();
             container.RegisterType<IPositionRankListFactory<PositionRankList>, PositionRankListFactory<PositionRankList>>();
             container.RegisterType<ISport, NFL>(STR_NFL);
             container.RegisterType<ISport, Soccer>(STR_SOCCER);
@@ -51,17 +53,27 @@ namespace DepthChartsApp
             container.RegisterType<ITeam, TampaBayBuccaneers>(STR_NFL);
             container.RegisterType<ITeam, RealMadrid>(STR_SOCCER);
 
+            sportsComboBox.ItemsSource = new object []{ STR_NFL, STR_SOCCER };
+            sportsComboBox.SelectedValue = currentSport;
 
-            var team = container.Resolve<ITeam>(STR_SOCCER);
+            Reset();
+        }
+
+        private void Reset()
+        {
+            var team = container.Resolve<ITeam>(currentSport);
             playersList.ItemsSource = team.GetPlayers().OrderBy(p => p.Number);
 
-            sport = container.Resolve<ISport>(STR_NFL);
+            sport = container.Resolve<ISport>(currentSport);
             factory = container.Resolve<IPositionRankListFactory<PositionRankList>>();
-            var NFLChartTitle = "Offense";
+            var title = currentSport == STR_NFL ? "Offense" : "Squad";
 
-            container.RegisterType<IDepthCharts<PositionRankList>, DepthCharts<PositionRankList>>(new InjectionConstructor(new object[] { sport, NFLChartTitle, factory}));
+            container.RegisterType<IDepthCharts<PositionRankList>, DepthCharts<PositionRankList>>(new InjectionConstructor(new object[] { sport, title, factory }));
+
             depthCharts = container.Resolve<IDepthCharts<PositionRankList>>();
             ChartTitle.DataContext = depthCharts;
+
+            OutputModel.Clear();
 
             RefreshGrid();
         }
@@ -79,6 +91,12 @@ namespace DepthChartsApp
         public class OutputViewModel
         {
             private StringBuilder sb = new StringBuilder();
+            private TextBox _outputBox;
+
+            public OutputViewModel(TextBox outputBox)
+            {
+                _outputBox = outputBox;
+            }
 
             public string Output
             {
@@ -86,10 +104,16 @@ namespace DepthChartsApp
                 set { }
             }
 
-            public void Append(string message, TextBox outputBox)
+            public void Append(string message)
             {
                 sb.AppendLine(message);
-                outputBox.Text = Output;
+                _outputBox.Text = Output;
+            }
+
+            public void Clear()
+            {
+                sb.Clear();
+                _outputBox.Text = "";
             }
         }
 
@@ -216,6 +240,7 @@ namespace DepthChartsApp
             if (indexTuple == null) return;
 
             var positionDepth = indexTuple.Item2 - 1; // need to deduct the first position string column
+            if (positionDepth <= 0) return;
 
             try
             {                
@@ -223,7 +248,7 @@ namespace DepthChartsApp
                 RefreshGrid();
 
                 var msg = $"{position} - Inserted {{{player}}} at index: {positionDepth}";
-                OutputModel.Append(msg, outputBox);
+                OutputModel.Append(msg);
             }
             catch (Exception ex)
             {                
@@ -232,46 +257,6 @@ namespace DepthChartsApp
                 MessageBox.Show(ex.Message);
             }
 
-        }
-
-        private void DepthChartsGrid_MouseMove(object sender, MouseEventArgs e)
-        {
-            if (e.LeftButton == MouseButtonState.Pressed)
-            {
-                DependencyObject dep = (DependencyObject)e.OriginalSource;
-
-                //Stepping through the visual tree
-                while ((dep != null) && !(dep is DataGridCell))
-                {
-                    dep = VisualTreeHelper.GetParent(dep);
-                }
-
-                //Is the dep a cell or outside the bounds of Window1?
-                if (dep == null | !(dep is DataGridCell))
-                {
-                    return;
-                }
-                else
-                {
-                    DataGridCell cell = new DataGridCell();
-                    cell = (DataGridCell)dep;
-                    while ((dep != null) && !(dep is DataGridRow))
-                    {
-                        dep = VisualTreeHelper.GetParent(dep);
-                    }
-
-                    if (dep == null)
-                    {
-                        return;
-                    }
-                    int colindex = cell.Column.DisplayIndex;
-
-                    DataGridRow row = dep as DataGridRow;
-                    int rowindex = depthChartsGrid.ItemContainerGenerator.IndexFromContainer(row);
-
-                    Trace.WriteLine($"{colindex}, {rowindex}");
-                }
-            }    
         }
 
         // somehow the datagrid.SelectedItemChanged event didn't popularte the new selected item, has to use the mouse up event
@@ -311,7 +296,7 @@ namespace DepthChartsApp
             depthCharts.RemovePlayerFromDepthChart(currentSelectedPosition, currentSelectedPlayer);
 
             var msg = $"{currentSelectedPosition} - Removed {{{currentSelectedPlayer}}}";
-            OutputModel.Append(msg, outputBox);
+            OutputModel.Append(msg);
 
             currentSelectedPosition = "";
             currentSelectedPlayer = null;
@@ -343,7 +328,7 @@ namespace DepthChartsApp
             };
 
             var output = depthCharts.PrintBackups(func, currentSelectedPosition, currentSelectedPlayer);
-            OutputModel.Append(output, outputBox);
+            OutputModel.Append(output);
         }
 
         private void OutputBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -374,7 +359,20 @@ namespace DepthChartsApp
             };
 
             var output = depthCharts.PrintFullDepthCharts(func);
-            OutputModel.Append(output, outputBox);
+            OutputModel.Append(output);
+        }
+
+        private void SportsComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            Trace.WriteLine(sportsComboBox.SelectedItem);
+
+            currentSport = sportsComboBox.SelectedItem.ToString();
+            Reset();
+        }
+
+        private void DepthChartsGrid_DragOver(object sender, DragEventArgs e)
+        {
+            Trace.WriteLine("over");
         }
     }
 }
