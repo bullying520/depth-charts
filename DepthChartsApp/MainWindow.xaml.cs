@@ -229,7 +229,7 @@ namespace DepthChartsApp
 
             Trace.WriteLine(player);
 
-            var rowData = (e.OriginalSource as TextBlock)?.DataContext;
+            var rowData = (e.OriginalSource as TextBlock).DataContext;
             if (rowData == null) return;
 
             var position = rowData.GetType().GetProperty("Position")?.GetValue(rowData, null).ToString();
@@ -240,7 +240,7 @@ namespace DepthChartsApp
             if (indexTuple == null) return;
 
             var positionDepth = indexTuple.Item2 - 1; // need to deduct the first position string column
-            if (positionDepth <= 0) return;
+            if (positionDepth < 0) return;
 
             try
             {                
@@ -256,7 +256,6 @@ namespace DepthChartsApp
 
                 MessageBox.Show(ex.Message);
             }
-
         }
 
         // somehow the datagrid.SelectedItemChanged event didn't popularte the new selected item, has to use the mouse up event

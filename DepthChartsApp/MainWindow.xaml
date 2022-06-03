@@ -16,7 +16,7 @@
             </ListBox.ItemTemplate>
         </ListBox>
         <Label x:Name="label" Content="Choose sport" HorizontalAlignment="Left" Margin="2,1,0,0" VerticalAlignment="Top" Width="98" Height="26"/>
-        <DataGrid x:Name="depthChartsGrid" HorizontalAlignment="Left" Height="389" Margin="153,31,0,0" VerticalAlignment="Top" Width="1114" AutoGenerateColumns="False" AllowDrop="True" Drop="DepthChartsGrid_Drop" DragOver="DepthChartsGrid_DragOver" SelectionUnit="Cell" IsReadOnly="True" PreviewMouseLeftButtonUp="DepthChartsGrid_PreviewMouseLeftButtonUp">
+        <DataGrid x:Name="depthChartsGrid" HorizontalAlignment="Left" Height="389" Margin="153,31,0,0" VerticalAlignment="Top" Width="1114" AutoGenerateColumns="False" AllowDrop="True" Drop="DepthChartsGrid_Drop" DragOver="DepthChartsGrid_DragOver" SelectionUnit="Cell" SelectionMode="Single" IsReadOnly="True" PreviewMouseLeftButtonUp="DepthChartsGrid_PreviewMouseLeftButtonUp">
             <DataGrid.CellStyle>
                 <Style TargetType="DataGridCell">
                     <Style.Triggers>
